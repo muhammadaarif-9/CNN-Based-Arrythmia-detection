@@ -24,20 +24,22 @@ from sklearn.metrics import precision_recall_curve
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.metrics import accuracy_score, auc, f1_score, precision_score, recall_score
 
+
+
 class Config:
-    csv_path = ''
-    seed = 2021
-    device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
-    attn_state_path = '../input/mitbih-with-synthetic/attn.pth'
-    lstm_state_path = '../input/mitbih-with-synthetic/lstm.pth'
-    cnn_state_path = '../input/mitbih-with-synthetic/cnn.pth'
-    
-    attn_logs = '../input/mitbih-with-synthetic/attn.csv'
-    lstm_logs = '../input/mitbih-with-synthetic/lstm.csv'
-    cnn_logs = '../input/mitbih-with-synthetic/cnn.csv'
-    
-    train_csv_path = '../input/mitbih-with-synthetic/mitbih_with_syntetic_train.csv'
-    test_csv_path = '../input/mitbih-with-synthetic/mitbih_with_syntetic_test.csv'
+    def __init__(self):
+        self.csv_path = ''
+        self.seed = 2021
+        self.device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+        self.attn_state_path = '/muhammadaarif/IOT/path_attention_model_dict.pth'
+        self.lstm_state_path = '/muhammadaarif/IOT/path_lstm_model_dict.pth'
+        self.cnn_state_path = '/muhammadaarif/IOT/path_cnn_model_dict.pth'
+        self.attn_logs = '/muhammadaarif/IOT/path_attention_model_logs.csv'
+        self.lstm_logs = '/muhammadaarif/IOT/path_lstm_model_logs.csv'
+        self.cnn_logs = '/muhammadaarif/IOT/path_cnn_model_logs.csv'
+        self.train_csv_path = '/muhammadaarif/IOT/path_train_logs.csv'
+        self.test_csv_path = '/muhammadaarif/IOT/path_test_logs.csv'
+
 
 def seed_everything(seed: int):
     random.seed(seed)
@@ -48,32 +50,35 @@ def seed_everything(seed: int):
 config = Config()
 seed_everything(config.seed)
 
-df_ptbdb = pd.read_csv('/kaggle/input/heartbeat/ptbdb_abnormal.csv')
-df_mitbih = pd.read_csv('/kaggle/input/heartbeat/mitbih_train.csv')
+
+df_ptbdb = pd.read_csv('/muhammadaarif/IOT/project/path_ptbdb_abnormal.csv')
+df_mitbih = pd.read_csv('/muhammadaarif/IOT/project/path_mitbih_train.csv')
 df_ptbdb
 
 len(df_ptbdb)
 
-df_mitbih_train = pd.read_csv('/kaggle/input/heartbeat/mitbih_train.csv', header=None)
-df_mitbih_test = pd.read_csv('/kaggle/input/heartbeat/mitbih_test.csv', header=None)
+df_mitbih_train = pd.read_csv('/muhammadaarif/IOT/path_mitbih_train_dataset.csv', header=None)
+df_mitbih_test = pd.read_csv('/muhammadaarif/IOT/path_mitbih_test_dataset.csv', header=None)
 df_mitbih = pd.concat([df_mitbih_train, df_mitbih_test], axis=0)
 df_mitbih.rename(columns={187: 'class'}, inplace=True)
 
+
 id_to_label = {
-    0: "Normal",
-    1: "Artial Premature",
-    2: "Premature ventricular contraction",
-    3: "Fusion of ventricular and normal",
-    4: "Fusion of paced and normal"
+    0: "Class: Normal",
+    1: "Class: Artial Premature",
+    2: "Class: Premature ventricular contraction",
+    3: "Class: Fusion of ventricular and normal",
+    4: "Class: Fusion of paced and normal"
 }
+
 df_mitbih['label'] = df_mitbih.iloc[:, -1].map(id_to_label)
 print(df_mitbih.info())
 
+
 len(df_mitbih_test)
 
-df_mitbih.to_csv('data.csv', index=False)
-config.csv_path = 'data.csv'
-
+df_mitbih.to_csv('/muhammadaarif/IOT/path_data.csv', index=False)
+config.csv_path = '/muhammadaarif/IOT/path_data.csv'
 
 
 df_mitbih = pd.read_csv(config.csv_path)
@@ -99,13 +104,14 @@ for percentage, count, p in zip(
     x = p.get_x() + p.get_width() / 2 - 0.4
     y = p.get_y() + p.get_height()
     ax.annotate(str(percentage)+" / "+str(count), (x, y), fontsize=12, fontweight='bold')
-    
+
+
 plt.savefig('data_dist.png', facecolor='w', edgecolor='w', format='png',
         transparent=False, bbox_inches='tight', pad_inches=0.1)
 plt.savefig('data_dist.svg', facecolor='w', edgecolor='w', format='svg',
         transparent=False, bbox_inches='tight', pad_inches=0.1)
 
-config.csv_path = '../input/mitbih-with-synthetic/mitbih_with_syntetic.csv'
+config.csv_path = '/muhammadaarif/IOT/path_mitbih_with_syntetic_data.csv'
 df_mitbih_new = pd.read_csv(config.csv_path)
 
 percentages1 = [count / df_mitbih.shape[0] * 100 for count in df_mitbih['label'].value_counts()]
@@ -183,8 +189,8 @@ print(len(signals), len(y))
 
 print(f'data has {len(set([sig for line in signals for sig in line.split()]))} out of 16 372 411 unique values.')
 
-class ECGDataset(Dataset):
 
+class ECGDataset(Dataset):
     def __init__(self, df):
         self.df = df
         self.data_columns = self.df.columns[:-2].tolist()
@@ -199,17 +205,10 @@ class ECGDataset(Dataset):
         return len(self.df)
 
 def get_dataloader(phase: str, batch_size: int = 96) -> DataLoader:
-    '''
-    Dataset and DataLoader.
-    Parameters:
-        pahse: training or validation phase.
-        batch_size: data per iteration.
-    Returns:
-        data generator
-    '''
+
     df = pd.read_csv(config.train_csv_path)
     train_df, val_df = train_test_split(
-        df, test_size=0.15, random_state=config.seed, stratify=df['label']
+        df, test_size=0.15, random_state=42, stratify=df['class']
     )
     train_df, val_df = train_df.reset_index(drop=True), val_df.reset_index(drop=True)
     df = train_df if phase == 'train' else val_df
@@ -232,6 +231,7 @@ plt.plot(x.numpy(), swish_out.numpy(), label='Swish')
 plt.plot(x.numpy(), relu_out.numpy(), label='ReLU')
 plt.legend();
 plt.show()
+
 
 class ConvNormPool(nn.Module):
     """Conv Skip-connection module"""
@@ -302,7 +302,7 @@ class ConvNormPool(nn.Module):
         x = self.pool(x)
         return x
 
-class CNN(nn.Module):
+class ECGCNN(nn.Module):
     def __init__(
         self,
         input_size = 1,
@@ -340,8 +340,7 @@ class CNN(nn.Module):
         x = x.view(-1, x.size(1) * x.size(2))
         x = F.softmax(self.fc(x), dim=1)
         return x
-
-class RNN(nn.Module):
+class ECGRNN(nn.Module):
     """RNN module(cell type lstm or gru)"""
     def __init__(
         self,
@@ -418,7 +417,7 @@ class RNNModel(nn.Module):
         return x
 
 
-class RNNAttentionModel(nn.Module):
+class ECGRNNAttentionModel(nn.Module):
     def __init__(
         self,
         input_size,
@@ -462,8 +461,6 @@ class RNNAttentionModel(nn.Module):
         x = x.view(-1, x.size(1) * x.size(2))
         x = F.softmax(self.fc(x), dim=-1)
         return x
-
-
 class Meter:
     def __init__(self, n_classes=5):
         self.metrics = {}
@@ -573,11 +570,11 @@ class Trainer:
                 self.best_loss = val_loss
                 torch.save(self.net.state_dict(), f"best_model_epoc{epoch}.pth")
             #clear_output()
-        
 
-#model = RNNAttentionModel(1, 64, 'lstm', False)
-model = RNNModel(1, 64, 'lstm', True)
-#model = CNN(num_classes=5, hid_size=128)
+#model = ECGRNNAttentionModel(1, 64, 'lstm', False)
+model = ECGRNNModel(1, 64, 'lstm', True)
+#model = ECGCNN(num_classes=5, hid_size=128)
+
 
 trainer = Trainer(net=model, lr=1e-3, batch_size=96, num_epochs=10)#100)
 trainer.run()
@@ -600,7 +597,7 @@ logs.head()
 logs.to_csv('cnn.csv', index=False)
 
 
-cnn_model = CNN(num_classes=5, hid_size=128).to(config.device)
+cnn_model = ECGCNN(num_classes=5, hid_size=128).to(config.device)
 cnn_model.load_state_dict(
     torch.load(config.cnn_state_path,
                map_location=config.device)
@@ -629,7 +626,7 @@ plt.tight_layout()
 fig.savefig("cnn.png", format="png",  pad_inches=0.2, transparent=False, bbox_inches='tight')
 fig.savefig("cnn.svg", format="svg",  pad_inches=0.2, transparent=False, bbox_inches='tight')
 
-lstm_model = RNNModel(1, 64, 'lstm', True).to(config.device)
+lstm_model = ECGRNNModel(1, 64, 'lstm', True).to(config.device)
 lstm_model.load_state_dict(
     torch.load(config.lstm_state_path,
                map_location=config.device)
@@ -658,7 +655,7 @@ plt.tight_layout()
 fig.savefig("lstm.png", format="png",  pad_inches=0.2, transparent=False, bbox_inches='tight')
 fig.savefig("lstm.svg", format="svg",  pad_inches=0.2, transparent=False, bbox_inches='tight')
 
-attn_model = RNNAttentionModel(1, 64, 'lstm', False).to(config.device)
+attn_model = ECGRNNAttentionModel(1, 64, 'lstm', False).to(config.device)
 attn_model.load_state_dict(
     torch.load(config.attn_state_path,
                map_location=config.device)
@@ -672,6 +669,7 @@ palettes = [sns.color_palette(colors, 2),
             sns.color_palette(colors[:2]+colors[-2:] + colors[2:-2], 6)]
             
 fig, ax = plt.subplots(1, 2, figsize=(12, 4))
+
 
 sns.lineplot(data=logs.iloc[:, :2], palette=palettes[0], markers=True, ax=ax[0], linewidth=2.5,)
 ax[0].set_title("Loss Function during Model Training", fontsize=14)
@@ -848,3 +846,4 @@ plt.savefig(f"ensemble result.svg",format="svg",bbox_inches='tight', pad_inches=
 plt.savefig(f"ensemble result.png", format="png",bbox_inches='tight', pad_inches=0.2)
 
 clf_report
+
