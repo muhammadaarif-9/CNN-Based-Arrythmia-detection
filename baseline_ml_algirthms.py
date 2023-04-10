@@ -1,162 +1,204 @@
-import pandas as pd
+import torch
+import torch.nn as nn
+from torch.utils.data import Dataset, DataLoader
+from sklearn.metrics import confusion_matrix, precision_score, recall_score, f1_score
+
+
+import wfdb
 import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.svm import SVC, SVR
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.naive_bayes import GaussianNB
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+
+from torch.utils.data import Dataset
+
+# path to MIT-BIH dataset
+data_path = 'muhammadaarif/IOT/path_mitdb/'
+
+# sampling frequency and duration of each ECG segment
+fs = 360
+segment_len = 10 # sec
+
+# Load ECG signals and their  annotations
+records = ['100', '101', '102'] 
+signals = []
+labels = []
+for record in records:
+    signal, fields = wfdb.rdsamp(data_path + record)
+    ann = wfdb.rdann(data_path + record, 'atr')
+    labels.extend(ann.symbol)
+    for i in range(0, len(ann.sample), fs*segment_len):
+        start_idx = ann.sample[i]
+        end_idx = start_idx + fs*segment_len
+        signals.append(signal[start_idx:end_idx, 0])
+signals = np.array(signals)
+labels = np.array(labels)
 
 
-# Load dataset
-df = pd.read_csv('/muhammadaarif/IOT/path_mit_bih.csv')
-
-# Split dataset into features and labels
-X = df.drop('label', axis=1).values
-y = df['label'].values
-
-# Split dataset into train and test sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-# Train SVM classifier
-svm_clf = SVC()
-svm_clf.fit(X_train, y_train)
-svm_clf_acc = svm_clf.score(X_test, y_test)
-svm_clf_y_pred = svm_clf.predict(X_test)
-
-print("SVM Classifier accuracy:", svm_clf_acc)
-
-# Train SVM regression
-svm_reg = SVR()
-svm_reg.fit(X_train, y_train)
-svm_reg_acc = svm_reg.score(X_test, y_test)
-print("SVM Regression accuracy:", svm_reg_acc)
-
-# Train Decision Tree
-dt_clf = DecisionTreeClassifier()
-dt_clf.fit(X_train, y_train)
-dt_clf_acc = dt_clf.score(X_test, y_test)
-print("Decision Tree Classifier accuracy:", dt_clf_acc)
-
-# Train Random Forest
-rf_clf = RandomForestClassifier()
-rf_clf.fit(X_train, y_train)
-rf_clf_acc = rf_clf.score(X_test, y_test)
-print("Random Forest Classifier accuracy:", rf_clf_acc)
-
-# Train Logistic Regression
-lr_clf = LogisticRegression()
-lr_clf.fit(X_train, y_train)
-lr_clf_acc = lr_clf.score(X_test, y_test)
-print("Logistic Regression accuracy:", lr_clf_acc)
-
-# Train KNN
-knn_clf = KNeighborsClassifier()
-knn_clf.fit(X_train, y_train)
-knn_clf_acc = knn_clf.score(X_test, y_test)
-print("KNN Classifier accuracy:", knn_clf_acc)
-
-# Train Naive Bayes
-nb_clf = GaussianNB()
-nb_clf.fit(X_train, y_train)
-nb_clf_acc = nb_clf.score(X_test, y_test)
-print("Naive Bayes Classifier accuracy:", nb_clf_acc)
-
-svm_clf_y_pred = svm_clf.predict(X_test)
-svm_reg_y_pred = svm_reg.predict(X_test)
-dt_y_pred = dt.predict(X_test)
-rf_y_pred = rf.predict(X_test)
-lr_y_pred = lr.predict(X_test)
-knn_y_pred = knn.predict(X_test)
-nb_y_pred = nb.predict(X_test)
+train_dataset = ECGRhythmDataset(train_signals, train_labels)
+train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 
 
-y_true = y_test
-
-# calculate accuracy
-svm_clf_accuracy = accuracy_score(y_true, svm_clf_y_pred)
-svm_reg_accuracy = accuracy_score(y_true, svm_reg_y_pred)
-dt_accuracy = accuracy_score(y_true, dt_y_pred)
-rf_accuracy = accuracy_score(y_true, rf_y_pred)
-lr_accuracy = accuracy_score(y_true, lr_y_pred)
-knn_accuracy = accuracy_score(y_true, knn_y_pred)
-nb_accuracy = accuracy_score(y_true, nb_y_pred)
-
-# calculate precision 
-svm_clf_precision = precision_score(y_true, svm_clf_y_pred, average='weighted')
-svm_reg_precision = precision_score(y_true, svm_reg_y_pred, average='weighted')
-dt_precision = precision_score(y_true, dt_y_pred, average='weighted')
-rf_precision = precision_score(y_true, rf_y_pred, average='weighted')
-lr_precision = precision_score(y_true, lr_y_pred, average='weighted')
-knn_precision = precision_score(y_true, knn_y_pred, average='weighted')
-nb_precision = precision_score(y_true, nb_y_pred, average='weighted')
-
-# calculate recall
-svm_clf_recall = recall_score(y_true, svm_clf_y_pred, average='weighted')
-svm_reg_recall = recall_score(y_true, svm_reg_y_pred, average='weighted')
-dt_recall = recall_score(y_true, dt_y_pred, average='weighted')
-rf_recall = recall_score(y_true, rf_y_pred, average='weighted')
-lr_recall = recall_score(y_true, lr_y_pred, average='weighted')
-knn_recall = recall_score(y_true, knn_y_pred, average='weighted')
-nb_recall = recall_score(y_true, nb_y_pred, average='weighted')
-
-# calculate f1-score
-svm_clf_f1 = f1_score(y_true, svm_clf_y_pred, average='weighted')
-svm_reg_f1 = f1_score(y_true, svm_reg_y_pred, average='weighted')
-dt_f1 = f1_score(y_true, dt_y_pred, average='weighted')
-rf_f1 = f1_score(y_true, rf_y_pred, average='weighted')
-lr_f1 = f1_score(y_true, lr_y_pred, average='weighted')
-knn_f1 = f1_score(y_true, knn_y_pred, average='weighted')
-nb_f1 = f1_score(y_true, nb_y_pred, average='weighted')
+class ECGRhythmDataset(Dataset):
+    def __init__(self, signals, labels):
+        self.signals = signals
+        self.labels = labels
+    
+    def __len__(self):
+        return len(self.signals)
+    
+    def __getitem__(self, idx):
+        signal = self.signals[idx]
+        label = self.labels[idx]
+        return signal, label
 
 
+# Define the Swish activation function
+class Swish(nn.Module):
+    def forward(self, x):
+        return x * torch.sigmoid(x)
 
-# Print svm classifier metrics
-print("Accuracy: {:.2f}%".format(svm_clf_accuracy * 100))
-print("Precision: {:.2f}%".format(svm_clf_precision * 100))
-print("Recall: {:.2f}%".format(svm_clf_recall * 100))
-print("F1-Score: {:.2f}%".format(svm_clf_f1 * 100))
+# Define the CNN model
+class CNN(nn.Module):
+    def __init__(self):
+        super(CNN, self).__init__()
+        self.conv1 = nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1)
+        self.bn1 = nn.BatchNorm2d(16)
+        self.swish1 = Swish()
+        self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.conv2 = nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1)
+        self.bn2 = nn.BatchNorm2d(32)
+        self.swish2 = Swish()
+        self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.conv3 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)
+        self.bn3 = nn.BatchNorm2d(64)
+        self.swish3 = Swish()
+        self.pool3 = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.fc1 = nn.Linear(64 * 7 * 7, 128)
+        self.swish4 = Swish()
+        self.fc2 = nn.Linear(128, 10)
 
-# Print svm regression metrics
-print("Accuracy: {:.2f}%".format(svm_reg_accuracy * 100))
-print("Precision: {:.2f}%".format(svm_reg_precision * 100))
-print("Recall: {:.2f}%".format(svm_reg_recall * 100))
-print("F1-Score: {:.2f}%".format(svm_reg_f1 * 100))
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.swish1(x)
+        x = self.pool1(x)
+        x = self.conv2(x)
+        x = self.bn2(x)
+        x = self.swish2(x)
+        x = self.pool2(x)
+        x = self.conv3(x)
+        x = self.bn3(x)
+        x = self.swish3(x)
+        x = self.pool3(x)
+        x = x.view(-1, 64 * 7 * 7)
+        x = self.fc1(x)
+        x = self.swish4(x)
+        x = self.fc2(x)
+        return x
+
+class CNN_LSTM(nn.Module):
+    def __init__(self):
+        super(CNN_LSTM, self).__init__()
+        self.conv1 = nn.Conv1d(in_channels=1, out_channels=32, kernel_size=5)
+        self.conv2 = nn.Conv1d(in_channels=32, out_channels=64, kernel_size=5)
+        self.pool = nn.MaxPool1d(2, 2)
+        self.dropout1 = nn.Dropout(0.25)
+        self.lstm = nn.LSTM(input_size=64 * 22, hidden_size=100, num_layers=1, batch_first=True)
+        self.dropout2 = nn.Dropout(0.5)
+        self.fc1 = nn.Linear(100, 5)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = Swish()(x)
+        x = self.conv2(x)
+        x = Swish()(x)
+        x = self.pool(x)
+        x = self.dropout1(x)
+        x = x.view(-1, 64 * 22)
+        x = x.unsqueeze(1)
+        x, _ = self.lstm(x)
+        x = x[:, -1, :]
+        x = self.dropout2(x)
+        x = self.fc1(x)
+        return x
+
+class Attention(nn.Module):
+    def __init__(self, in_features):
+        super(Attention, self).__init__()
+        self.attention = nn.Sequential(
+            nn.Linear(in_features=in_features, out_features=in_features),
+            nn.Tanh(),
+            nn.Linear(in_features=in_features, out_features=1)
+        )
+
+    def forward(self, x):
+        weights = self.attention(x)
+        weights = F.softmax(weights, dim=1)
+        x = torch.mul(x, weights)
+        x = torch.sum(x, dim=1)
+        return x
+class CNN_LSTM_Attention(nn.Module):
+    def __init__(self, num_classes):
+        super(CNN_LSTM_Attention, self).__init__()
+        self.conv1 = nn.Conv1d(in_channels=1, out_channels=32, kernel_size=5)
+        self.conv2 = nn.Conv1d(in_channels=32, out_channels=64, kernel_size=5)
+        self.pool = nn.MaxPool1d(2, 2)
+        self.dropout1 = nn.Dropout(0.25)
+        self.lstm = nn.LSTM(64, 64, bidirectional=True, batch_first=True)
+        self.dropout2 = nn.Dropout(0.5)
+        self.fc_att = nn.Linear(64 * 2, 1)
+        self.softmax_att = nn.Softmax(dim=1)
+        self.fc = nn.Linear(64 * 2, num_classes)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = F.relu(x)
+        x = self.pool(x)
+        x = self.dropout1(x)
+        x = self.conv2(x)
+        x = F.relu(x)
+        x = self.pool(x)
+        x = self.dropout1(x)
+        x = x.permute(0, 2, 1)
+        x, _ = self.lstm(x)
+        x = x[:, -1, :]
+        att_weights = self.fc_att(x)
+        att_weights = self.softmax_att(att_weights)
+        x = torch.sum(x * att_weights, dim=1)
+        x = self.dropout2(x)
+        x = self.fc(x)
+        return x
 
 
-# Print decision tree metrics
-print("Accuracy: {:.2f}%".format(dt_accuracy * 100))
-print("Precision: {:.2f}%".format(dt_precision * 100))
-print("Recall: {:.2f}%".format(dt_recall * 100))
-print("F1-Score: {:.2f}%".format(dt_f1 * 100))
 
+model = CNN(num_classes=num_classes)
+#model = CNN_LSTM(num_classes=num_classes)
+#model = CNN_LSTM_Attention(num_classes=num_classes)
 
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.1)
 
-# Print random forest metrics
-print("Accuracy: {:.2f}%".format(rf_accuracy * 100))
-print("Precision: {:.2f}%".format(rf_precision * 100))
-print("Recall: {:.2f}%".format(rf_recall * 100))
-print("F1-Score: {:.2f}%".format(rf_f1 * 100))
+trainer = Trainer(
+    model=model,
+    train_loader=train_loader,
+    val_loader=val_loader,
+    criterion=criterion,
+    optimizer=optimizer,
+    scheduler=scheduler,
+    device=device,
+)
 
+# Train the model
+trainer.train(num_epochs=num_epochs)
 
-# Print logistics regression metrics
-print("Accuracy: {:.2f}%".format(lr_accuracy * 100))
-print("Precision: {:.2f}%".format(lr_precision * 100))
-print("Recall: {:.2f}%".format(lr_recall * 100))
-print("F1-Score: {:.2f}%".format(lr_f1 * 100))
+# Test the model
+y_true, y_pred = trainer.test(test_loader)
 
+# Calculate evaluation metrics
+accuracy = accuracy_score(y_true, y_pred)
+precision = precision_score(y_true, y_pred, average='weighted')
+recall = recall_score(y_true, y_pred, average='weighted')
+f1 = f1_score(y_true, y_pred, average='weighted')
 
-# Print KNN metrics
-print("Accuracy: {:.2f}%".format(knn_accuracy * 100))
-print("Precision: {:.2f}%".format(lr_precision * 100))
-print("Recall: {:.2f}%".format(knn_recall * 100))
-print("F1-Score: {:.2f}%".format(knn_f1 * 100))
-
-
-# Print Naive bayes
-print("Accuracy: {:.2f}%".format(nb_accuracy * 100))
-print("Precision: {:.2f}%".format(nb_precision * 100))
-print("Recall: {:.2f}%".format(nb_recall * 100))
-print("F1-Score: {:.2f}%".format(nb_f1 * 100))
+# Plot confusion matrix
+cm = confusion_matrix(y_true, y_pred)
+plot_confusion_matrix(cm, classes=classes)
