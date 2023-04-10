@@ -35,6 +35,21 @@ labels = np.array(labels)
 train_dataset = ECGRhythmDataset(train_signals, train_labels)
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 
+class ValidationDataset(Dataset):
+    def __init__(self, data_path):
+        self.data = np.load(data_path)
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        ecg = self.data[idx]["ecg"]
+        label = self.data[idx]["label"]
+        return ecg, label
+
+val_dataset = ValidationDataset(data_path='muhammadaarif/IOT/path_validation_data.csv')
+val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
+
 
 class ECGRhythmDataset(Dataset):
     def __init__(self, signals, labels):
@@ -54,6 +69,7 @@ class ECGRhythmDataset(Dataset):
 class Swish(nn.Module):
     def forward(self, x):
         return x * torch.sigmoid(x)
+
 
 # Define the CNN model
 class CNN(nn.Module):
