@@ -10,7 +10,7 @@ import numpy as np
 from torch.utils.data import Dataset
 
 # path to MIT-BIH dataset
-data_path = 'muhammadaarif/IOT/path_mitdb/'
+data_path = 'muhammadaarif/IOT/path_mitdb/mit_dataset.csv'
 
 # sampling frequency and duration of each ECG segment
 fs = 360
