@@ -11,7 +11,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 
 
 # Load dataset
-df = pd.read_csv('data.csv')
+df = pd.read_csv('/muhammadaarif/IOT/path_mit_bih.csv')
 
 # Split dataset into features and labels
 X = df.drop('label', axis=1).values
